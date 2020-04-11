@@ -106,7 +106,7 @@ public class MarketMakerStrategy extends BaseStrategy {
                 sellOrderId = ack.getOrderId();
                 askPx = px.getBestAsk() + 1;
             } else {
-                if(Math.abs(px.getBestBid() - bidPx) < 0.8) {
+                if(Math.abs(px.getBestAsk() - askPx) < 0.8) {
                     System.out.println("cancel/replacing sell trade order");
                     cancelOrder(tradeInstrumentId, sellOrderId);
                     sellOrderId = null;
