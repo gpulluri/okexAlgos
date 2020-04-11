@@ -109,7 +109,7 @@ public class MarketMakerStrategy extends BaseStrategy {
                 if(Math.abs(px.getBestBid() - bidPx) < 0.8) {
                     System.out.println("cancel/replacing sell trade order");
                     cancelOrder(tradeInstrumentId, sellOrderId);
-                    buyOrderId = null;
+                    sellOrderId = null;
                 }
             }
         } else if(px.getInstrumentId().equals(hedgeInstrumentId)) {
