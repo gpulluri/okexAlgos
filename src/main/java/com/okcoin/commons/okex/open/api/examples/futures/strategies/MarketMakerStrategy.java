@@ -36,6 +36,7 @@ public class MarketMakerStrategy extends BaseStrategy {
 
     @Override
     public void onOrderUpdate(OrderUpdate update) {
+
         System.out.println("Order update: "+update);
         //String instrumentId = update.getInstrumentId();
         String orderType = update.getType();
@@ -44,7 +45,10 @@ public class MarketMakerStrategy extends BaseStrategy {
         if(orderType.equals("1")) {
             if(orderId.equals(this.buyOrderId)) {
                 //if order is filled - get ready to place hedge sell order
-                if(update.getFilledQty() == 1)  {
+                if(update.getState().equals("-1")) {
+                    buyOrderId = null;
+                }
+                else if(update.getState().equals("2"))  {
                     hedgeSell = true;
                 } else if(!update.getErrorCode().equals("0")) {
                     //if order failed with error code - place buy order again?
@@ -52,7 +56,7 @@ public class MarketMakerStrategy extends BaseStrategy {
                 }
             } else if(orderId.equals(this.hedgeBuyOrderId)){
                 //if hedge order is filled - get ready to place sell order
-                if(update.getFilledQty() == 1) {
+                if(update.getState().equals("2")) {
                     sellOrderId = null;
                 } else if(!update.getErrorCode().equals("0")) {
                     //if hedge order failed with error code - place hedge buy order again?
@@ -63,15 +67,17 @@ public class MarketMakerStrategy extends BaseStrategy {
         else if(orderType.equals("2")) {
             if(orderId.equals(this.sellOrderId)) {
                 //if order is filled - get ready to place sell order
-                if(update.getFilledQty() == 1) hedgeBuy = true;
+                if(update.getState().equals("-1")) {
+                    sellOrderId = null;
+                }
+                else if(update.getFilledQty() == 1) hedgeBuy = true;
                 //if order failed with error code - place buy order again?
                 else if(!update.getErrorCode().equals("0")) {
                     System.out.println("Error in sell order: "+update);
                 }
-
             } else if(orderId.equals(this.hedgeSellOrderId)){
                 //if hedge order is filled - get ready to place buy order
-                if(update.getFilledQty() == 1) {
+                if(update.getState().equals("2")) {
                     buyOrderId = null;
                 }
                 //if hedge order failed with error code - place hedge sell order again?
@@ -94,10 +100,10 @@ public class MarketMakerStrategy extends BaseStrategy {
                 bidPx = px.getBestBid() - 1;
             } else {
                 //cancel/replace order if price difference crosses threshold
-                if(Math.abs(px.getBestBid() - bidPx) < 0.8) {
+                if(px.getBestBid() - bidPx  < 0.1 || Math.abs(px.getBestBid() - bidPx) > 1) {
                     System.out.println("cancel/replacing buy trade order");
                     cancelOrder(tradeInstrumentId, buyOrderId);
-                    buyOrderId = null;
+                    //buyOrderId = null;
                 }
             }
 
@@ -106,10 +112,10 @@ public class MarketMakerStrategy extends BaseStrategy {
                 sellOrderId = ack.getOrderId();
                 askPx = px.getBestAsk() + 1;
             } else {
-                if(Math.abs(px.getBestAsk() - askPx) < 0.8) {
+                if(askPx - px.getBestAsk()  < 0.1 || Math.abs(px.getBestAsk() - askPx) > 1) {
                     System.out.println("cancel/replacing sell trade order");
                     cancelOrder(tradeInstrumentId, sellOrderId);
-                    sellOrderId = null;
+                    //sellOrderId = null;
                 }
             }
         } else if(px.getInstrumentId().equals(hedgeInstrumentId)) {

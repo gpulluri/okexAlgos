@@ -76,6 +76,6 @@ public class WSAdaptor extends WebSocketAdapter {
 
     @Override
     public void onWebsocketPong(WebSocket ws) {
-        System.out.println("...");
+        //System.out.println("...");
     }
 }

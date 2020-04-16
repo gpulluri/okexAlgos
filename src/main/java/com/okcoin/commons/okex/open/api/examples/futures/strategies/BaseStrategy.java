@@ -53,8 +53,9 @@ public abstract class BaseStrategy implements MarketUpdateListener, FuturesOrder
         order.setPrice(Double.toString(price));
         order.setSize(Integer.toString(quantity));
         order.setMatch_price(Double.toString(matchPrice));
-
+        System.out.println("Sending order- clOrdId:"+clOrdId+", instrumentId:"+instrumentId+", type :" +type+", price: "+price+", quantity: "+quantity);
         OrderResult result = tradeAPIService.order(order);
+        System.out.println("Order Ack'ed - OrderId:"+result.getOrder_id()+", clOrdId:"+clOrdId+", instrumentId:"+instrumentId+", type :" +type+", price: "+price+", quantity: "+quantity);
         return new OrderAck(result);
     }
 

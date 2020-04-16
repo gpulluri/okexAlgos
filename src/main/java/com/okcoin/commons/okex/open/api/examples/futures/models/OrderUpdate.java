@@ -168,6 +168,6 @@ public class OrderUpdate {
 
     @Override
     public String toString() {
-        return "Instrument"+instrumentId+", Fill Qty: "+lastFillqty+", Type :"+type+" , Price : "+price;
+        return "OrderId: "+orderId+", clientOrderId: "+clientOid+", InstrumentId: "+instrumentId+", State :"+state+", Fill Qty: "+lastFillqty+", Type :"+type+" , Price : "+price;
     }
 }

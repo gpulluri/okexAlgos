@@ -60,6 +60,6 @@ public class FuturesPrice {
 
     @Override
     public String toString() {
-        return "Ticker: "+instrumentId+", Px: "+this.last;
+        return "Ticker: "+instrumentId+", Px: "+this.last+", best bid: "+this.bestBid+", best ask: "+this.bestAsk;
     }
 }
