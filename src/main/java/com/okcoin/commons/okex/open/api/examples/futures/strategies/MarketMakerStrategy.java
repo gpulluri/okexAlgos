@@ -22,6 +22,9 @@ public class MarketMakerStrategy extends BaseStrategy {
     Double bidPx = 0.0;
     Double askPx = 0.0;
 
+    int buyQuantity = 0;
+    int sellQuantity = 0;
+
     public MarketMakerStrategy(Properties properties) {
         super(properties);
         try {
@@ -35,7 +38,7 @@ public class MarketMakerStrategy extends BaseStrategy {
     }
 
     @Override
-    public void onOrderUpdate(OrderUpdate update) {
+    public synchronized void onOrderUpdate(OrderUpdate update) {
 
         System.out.println("Order update: "+update);
         //String instrumentId = update.getInstrumentId();
@@ -48,7 +51,8 @@ public class MarketMakerStrategy extends BaseStrategy {
                 if(update.getState().equals("-1")) {
                     buyOrderId = null;
                 }
-                else if(update.getState().equals("2"))  {
+                else if(update.getFilledQty() == 1)  {
+                    buyQuantity++;
                     hedgeSell = true;
                 } else if(!update.getErrorCode().equals("0")) {
                     //if order failed with error code - place buy order again?
@@ -70,12 +74,15 @@ public class MarketMakerStrategy extends BaseStrategy {
                 if(update.getState().equals("-1")) {
                     sellOrderId = null;
                 }
-                else if(update.getFilledQty() == 1) hedgeBuy = true;
+                else if(update.getFilledQty() == 1) {
+                    sellQuantity++;
+                    hedgeBuy = true;
+                }
                 //if order failed with error code - place buy order again?
                 else if(!update.getErrorCode().equals("0")) {
                     System.out.println("Error in sell order: "+update);
                 }
-            } else if(orderId.equals(this.hedgeSellOrderId)){
+            } else if(orderId.equals(this.hedgeSellOrderId)) {
                 //if hedge order is filled - get ready to place buy order
                 if(update.getState().equals("2")) {
                     buyOrderId = null;
@@ -86,21 +93,24 @@ public class MarketMakerStrategy extends BaseStrategy {
                 }
             }
         }
+        System.out.println("Buy Quantity :"+buyQuantity+", Sell Quantity :"+sellQuantity);
     }
 
     @Override
-    public void onPriceUpdate(FuturesPrice px) {
+    public synchronized void onPriceUpdate(FuturesPrice px) {
         System.out.println("Price update: "+px);
         //1:open long 2:open short 3:close long 4:close short
 
         if(px.getInstrumentId().equals(tradeInstrumentId)) {
             if(buyOrderId == null) {
-                OrderAck ack = sendOrder("1",tradeInstrumentId, px.getBestBid()-1, 1, 0);
+                bidPx = px.getBestBid() - .1;
+                OrderAck ack = sendOrder("1",tradeInstrumentId, bidPx, 1, 0);
                 buyOrderId = ack.getOrderId();
-                bidPx = px.getBestBid() - 1;
+
             } else {
                 //cancel/replace order if price difference crosses threshold
-                if(px.getBestBid() - bidPx  < 0.1 || Math.abs(px.getBestBid() - bidPx) > 1) {
+                //px.getBestBid() - bidPx  <= 0.02 ||
+                if( Math.abs(px.getBestBid() - bidPx) > 1) {
                     System.out.println("cancel/replacing buy trade order");
                     cancelOrder(tradeInstrumentId, buyOrderId);
                     //buyOrderId = null;
@@ -108,11 +118,13 @@ public class MarketMakerStrategy extends BaseStrategy {
             }
 
             if(sellOrderId == null) {
-                OrderAck ack = sendOrder("2",tradeInstrumentId, px.getBestAsk()+1, 1, 0);
+                askPx = px.getBestAsk() + .1;
+                OrderAck ack = sendOrder("2",tradeInstrumentId, askPx, 1, 0);
                 sellOrderId = ack.getOrderId();
-                askPx = px.getBestAsk() + 1;
+
             } else {
-                if(askPx - px.getBestAsk()  < 0.1 || Math.abs(px.getBestAsk() - askPx) > 1) {
+                //askPx - px.getBestAsk()  <= 0.02 ||
+                if(Math.abs(px.getBestAsk() - askPx) > 1) {
                     System.out.println("cancel/replacing sell trade order");
                     cancelOrder(tradeInstrumentId, sellOrderId);
                     //sellOrderId = null;
